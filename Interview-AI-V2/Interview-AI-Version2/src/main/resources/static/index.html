@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Stream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="../static/js/jquery-3.5.1.min.js"></script>
+    <script src="../static/js/bootstrap.min.js"></script>
+    <link href="../static/css/bootstrap.min.css">
+    <link href="../static/css/myapp.css">
+
+</head>
+<body>
+
+<div class="container text-center">
+    <h1>Live Interview Transcript</h1>
+    <div id="controls">
+        <button id="startBtn" class="btn btn-success">Start Recording</button>
+        <button id="stopBtn" class="btn btn-warning" disabled>Stop Recording</button>
+        <button id="sendBtn" class="btn btn-primary" disabled>Send Transcript</button>
+    </div>
+    <div id="transcriptBox" class="border"></div>
+</div>
+
+<script src="../static/js/sockjs.min.js"></script>
+<script src="../static/js/stomp.min.js"></script>
+<script src="../static/js/myapp.js"></script>
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+<!--    <title>WebSocket Audio Streaming</title>-->
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.2/sockjs.min.js"></script>-->
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h1>Audio Streaming with WebSocket</h1>-->
+<!--<button id="start-recording">Start Recording</button>-->
+<!--<button id="stop-recording" disabled>Stop Recording</button>-->
+
+<!--<script>-->
+<!--    let socket;-->
+<!--    let stompClient;-->
+<!--    let mediaRecorder;-->
+<!--    let audioChunks = [];-->
+
+<!--    function initializeWebSocket() {-->
+<!--        try {-->
+<!--            // Use SockJS for fallback options-->
+<!--            socket = new SockJS('http://localhost:7171/ws/stream');-->
+<!--            stompClient = Stomp.over(socket);-->
+
+<!--            stompClient.connect({}, function (frame) {-->
+<!--                console.log('Connected: ' + frame);-->
+<!--                stompClient.subscribe('/topic/response', function (response) {-->
+<!--                    console.log('Transcript:', response.body);-->
+<!--                });-->
+<!--            }, function (error) {-->
+<!--                console.error('STOMP connection error:', error);-->
+<!--            });-->
+
+<!--            socket.onopen = function () {-->
+<!--                console.log('WebSocket connection established');-->
+<!--            };-->
+
+<!--            socket.onclose = function (event) {-->
+<!--                console.log('WebSocket connection closed, attempting to reconnect...');-->
+<!--                setTimeout(initializeWebSocket, 5000); // Attempt to reconnect after 5 seconds-->
+<!--            };-->
+
+<!--        } catch (error) {-->
+<!--            console.error('Failed to initialize WebSocket:', error);-->
+<!--        }-->
+<!--    }-->
+
+<!--    document.getElementById('start-recording').addEventListener('click', () => {-->
+<!--        initializeWebSocket();-->
+
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                console.log('Microphone access granted');-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    console.log('Data available:', event.data);-->
+<!--                    audioChunks.push(event.data);-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    console.log('Recording stopped');-->
+<!--                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });-->
+<!--                    audioChunks = [];-->
+<!--                    audioBlob.arrayBuffer().then(buffer => {-->
+<!--                        if (stompClient && stompClient.ws.readyState === WebSocket.OPEN) {-->
+<!--                            console.log('Sending audio data to WebSocket');-->
+<!--                            stompClient.send('/app/audio', {}, new Uint8Array(buffer));-->
+<!--                        } else {-->
+<!--                            console.error('STOMP client is not connected');-->
+<!--                        }-->
+<!--                    }).catch(error => {-->
+<!--                        console.error('Error converting audio blob to array buffer:', error);-->
+<!--                    });-->
+<!--                };-->
+
+<!--                mediaRecorder.start();-->
+<!--                document.getElementById('stop-recording').disabled = false;-->
+<!--                document.getElementById('start-recording').disabled = true;-->
+<!--            })-->
+<!--            .catch(error => {-->
+<!--                console.error('Error accessing microphone:', error);-->
+<!--            });-->
+<!--    });-->
+
+<!--    document.getElementById('stop-recording').addEventListener('click', () => {-->
+<!--        if (mediaRecorder) {-->
+<!--            mediaRecorder.stop();-->
+<!--            document.getElementById('stop-recording').disabled = true;-->
+<!--            document.getElementById('start-recording').disabled = false;-->
+<!--        } else {-->
+<!--            console.error('MediaRecorder not initialized');-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+<!--    <title>WebSocket Audio Streaming</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h1>Audio Streaming with WebSocket</h1>-->
+<!--<button id="start-recording">Start Recording</button>-->
+<!--<button id="stop-recording" disabled>Stop Recording</button>-->
+
+<!--<script>-->
+<!--    let socket;-->
+<!--    let mediaRecorder;-->
+<!--    let audioChunks = [];-->
+
+<!--    function initializeWebSocket() {-->
+<!--        try {-->
+<!--            // socket = new WebSocket("/stream");-->
+<!--            socket = new WebSocket('ws://localhost:7171/stream');-->
+<!--            console.log('Attempting to connect to WebSocket...');-->
+
+<!--            socket.addEventListener('open', function (event) {-->
+<!--                console.log('WebSocket connection established');-->
+<!--            });-->
+
+<!--            socket.addEventListener('message', function (event) {-->
+<!--                console.log('Transcript:', event.data);-->
+<!--            });-->
+
+<!--            socket.addEventListener('error', function (event) {-->
+<!--                console.error('WebSocket error:', event);-->
+<!--            });-->
+
+<!--            socket.addEventListener('close', function (event) {-->
+<!--                console.log('WebSocket connection closed');-->
+<!--            });-->
+
+<!--            // Handle WebSocket close event to attempt reconnection if necessary-->
+<!--            socket.addEventListener('close', function (event) {-->
+<!--                console.log('WebSocket connection closed, attempting to reconnect...');-->
+<!--                setTimeout(initializeWebSocket, 5000); // Attempt to reconnect after 5 seconds-->
+<!--            });-->
+
+<!--        } catch (error) {-->
+<!--            console.error('Failed to initialize WebSocket:', error);-->
+<!--        }-->
+<!--    }-->
+
+<!--    document.getElementById('start-recording').addEventListener('click', () => {-->
+<!--        initializeWebSocket();-->
+
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                console.log('Microphone access granted');-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    console.log('Data available:', event.data);-->
+<!--                    audioChunks.push(event.data);-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    console.log('Recording stopped');-->
+<!--                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });-->
+<!--                    audioChunks = [];-->
+<!--                    audioBlob.arrayBuffer().then(buffer => {-->
+<!--                        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--                            console.log('Sending audio data to WebSocket');-->
+<!--                            socket.send(new Uint8Array(buffer));-->
+<!--                        } else {-->
+<!--                            console.error('WebSocket is not open');-->
+<!--                        }-->
+<!--                    }).catch(error => {-->
+<!--                        console.error('Error converting audio blob to array buffer:', error);-->
+<!--                    });-->
+<!--                };-->
+
+<!--                mediaRecorder.start();-->
+<!--                document.getElementById('stop-recording').disabled = false;-->
+<!--                document.getElementById('start-recording').disabled = true;-->
+<!--            })-->
+<!--            .catch(error => {-->
+<!--                console.error('Error accessing microphone:', error);-->
+<!--            });-->
+<!--    });-->
+
+<!--    document.getElementById('stop-recording').addEventListener('click', () => {-->
+<!--        if (mediaRecorder) {-->
+<!--            mediaRecorder.stop();-->
+<!--            document.getElementById('stop-recording').disabled = true;-->
+<!--            document.getElementById('start-recording').disabled = false;-->
+<!--        } else {-->
+<!--            console.error('MediaRecorder not initialized');-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->

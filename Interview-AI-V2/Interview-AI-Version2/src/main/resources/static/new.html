@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Recorder</title>
+</head>
+<body>
+<button id="start">Start Recording</button>
+<button id="stop" disabled>Stop Recording</button>
+<audio id="audioPlayback" controls></audio>
+
+<script>
+    const startButton = document.getElementById('start');
+    const stopButton = document.getElementById('stop');
+    const audioPlayback = document.getElementById('audioPlayback');
+    let mediaRecorder;
+    let audioChunks = [];
+
+    startButton.addEventListener('click', () => {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayback.src = audioUrl;
+                    console.log(audioBlob);
+                    sendAudioToServer(audioBlob); // Send the audio data to the server
+                };
+
+                startButton.disabled = true;
+                stopButton.disabled = false;
+            })
+            .catch(error => console.error('Error accessing audio devices:', error));
+    });
+
+    stopButton.addEventListener('click', () => {
+        mediaRecorder.stop();
+        startButton.disabled = false;
+        stopButton.disabled = true;
+    });
+
+    function sendAudioToServer(audioBlob) {
+        const reader = new FileReader();
+
+        reader.onloadend = function() {
+            const audioBytes = new Uint8Array(reader.result);
+
+            fetch('http://localhost:5000/record', { // Update with your backend URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/octet-stream'
+                },
+                body: audioBytes
+            })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        };
+
+        reader.readAsArrayBuffer(audioBlob);
+    }
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Audio Recorder</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<button id="start">Start Recording</button>-->
+<!--<button id="stop" disabled>Stop Recording</button>-->
+<!--<audio id="audioPlayback" controls></audio>-->
+
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    const audioPlayback = document.getElementById('audioPlayback');-->
+<!--    let mediaRecorder;-->
+<!--    let audioChunks = [];-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start();-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    audioChunks.push(event.data);-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });-->
+<!--                    const audioUrl = URL.createObjectURL(audioBlob);-->
+<!--                    audioPlayback.src = audioUrl;-->
+<!--                    sendAudioToServer(audioBlob); // Send the audio data to the server-->
+<!--                };-->
+
+<!--                startButton.disabled = true;-->
+<!--                stopButton.disabled = false;-->
+<!--            });-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        mediaRecorder.stop();-->
+<!--        startButton.disabled = false;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+
+<!--    function sendAudioToServer(audioBlob) {-->
+<!--        const formData = new FormData();-->
+<!--        formData.append('audio', audioBlob, 'recording.wav');-->
+
+<!--        fetch('http://localhost:5000/record', {-->
+<!--            method: 'POST',-->
+<!--            body: formData-->
+<!--        })-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => console.log(data))-->
+<!--            .catch(error => console.error('Error:', error));-->
+<!--    }-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->

@@ -1,0 +1,1099 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Audio Stream Recorder</title>-->
+<!--    &lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--    <link href="css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <style>-->
+<!--        body {-->
+<!--            padding: 20px;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 600px;-->
+<!--            margin: auto;-->
+<!--        }-->
+<!--        .btn-custom {-->
+<!--            margin: 5px;-->
+<!--            width: 100%;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1 class="text-center mb-4">Audio Stream Recorder</h1>-->
+<!--    <div class="text-center">-->
+<!--        <button id="start" class="btn btn-primary btn-custom">Start Recording</button>-->
+<!--        <button id="send" class="btn btn-success btn-custom" disabled>Send</button>-->
+<!--        <button id="stop" class="btn btn-danger btn-custom" disabled>Stop Recording</button>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Bootstrap JS and dependencies &ndash;&gt;-->
+<!--<script src="js/popper.min.js"></script>-->
+<!--<script src="js/bootstrap.min.js"></script>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const sendButton = document.getElementById('send');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let audioChunks = [];-->
+<!--    let socket;-->
+<!--    let recordingStartTime;-->
+<!--    const MIN_RECORDING_DURATION = 10000; // Minimum duration in milliseconds (e.g., 10000ms = 10s)-->
+<!--    const CHUNK_SIZE = 1024 * 100; // 100 KB per chunk-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });-->
+
+<!--                // Clear previous chunks if any-->
+<!--                audioChunks = [];-->
+<!--                recordingStartTime = Date.now();-->
+
+<!--                mediaRecorder.onstart = () => {-->
+<!--                    console.log('Recording started.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    if (event.data.size > 0) {-->
+<!--                        audioChunks.push(event.data);-->
+<!--                        console.log(`Chunk received: ${event.data.size} bytes`);-->
+<!--                    } else {-->
+<!--                        console.log('Received empty chunk.');-->
+<!--                    }-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    console.log('Recording stopped.');-->
+<!--                    console.log(`Total chunks collected: ${audioChunks.length}`);-->
+
+<!--                    // Check recording duration-->
+<!--                    const recordingDuration = Date.now() - recordingStartTime;-->
+<!--                    if (recordingDuration >= MIN_RECORDING_DURATION) {-->
+<!--                        sendButton.disabled = false;-->
+<!--                    } else {-->
+<!--                        console.log('Recording was too short. Send button will not be enabled.');-->
+<!--                        sendButton.disabled = true;-->
+<!--                    }-->
+
+<!--                    console.log('MediaRecorder state after stop:', mediaRecorder.state);-->
+<!--                };-->
+
+<!--                mediaRecorder.start();-->
+
+<!--                startButton.disabled = true;-->
+<!--                stopButton.disabled = false;-->
+
+<!--                // Initialize WebSocket connection-->
+<!--                // socket = new WebSocket('ws://localhost:7171/ws/stream');-->
+<!--                socket = new WebSocket('ws://localhost:5000/audio');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    sendButton.addEventListener('click', () => {-->
+<!--        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--            if (audioChunks.length > 0) {-->
+<!--                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });-->
+<!--                const totalChunks = Math.ceil(audioBlob.size / CHUNK_SIZE);-->
+
+<!--                let offset = 0;-->
+<!--                let chunkIndex = 0;-->
+
+<!--                function sendNextChunk() {-->
+<!--                    if (offset < audioBlob.size) {-->
+<!--                        const chunk = audioBlob.slice(offset, offset + CHUNK_SIZE);-->
+<!--                        socket.send(chunk);-->
+<!--                        offset += CHUNK_SIZE;-->
+<!--                        chunkIndex++;-->
+
+<!--                        console.log(`Chunk ${chunkIndex}/${totalChunks} sent: ${chunk.size} bytes`);-->
+
+<!--                        // Send the next chunk after the previous one is sent-->
+<!--                        if (offset < audioBlob.size) {-->
+<!--                            setTimeout(sendNextChunk, 50); // Small delay to avoid overwhelming the connection-->
+<!--                        } else {-->
+<!--                            console.log('All chunks sent.');-->
+<!--                            audioChunks = []; // Clear chunks after sending-->
+
+<!--                            // Reset the buttons-->
+<!--                            startButton.disabled = false;-->
+<!--                            sendButton.disabled = true;-->
+<!--                            stopButton.disabled = true;-->
+<!--                        }-->
+<!--                    }-->
+<!--                }-->
+
+<!--                sendNextChunk();-->
+<!--            } else {-->
+<!--                console.error('No audio data to send.');-->
+<!--            }-->
+<!--        } else {-->
+<!--            console.error('WebSocket connection is not open.');-->
+<!--        }-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        if (mediaRecorder && mediaRecorder.state !== 'inactive') {-->
+<!--            mediaRecorder.stop();-->
+<!--            stopButton.disabled = true; // Disable stop button after stopping-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Audio Stream Recorder</title>-->
+<!--    &lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--    <link href="css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <style>-->
+<!--        body {-->
+<!--            padding: 20px;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 600px;-->
+<!--            margin: auto;-->
+<!--        }-->
+<!--        .btn-custom {-->
+<!--            margin: 5px;-->
+<!--            width: 100%;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1 class="text-center mb-4">Audio Stream Recorder</h1>-->
+<!--    <div class="text-center">-->
+<!--        <button id="start" class="btn btn-primary btn-custom">Start Recording</button>-->
+<!--        <button id="send" class="btn btn-success btn-custom" disabled>Send</button>-->
+<!--        <button id="stop" class="btn btn-danger btn-custom" disabled>Stop Recording</button>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Bootstrap JS and dependencies &ndash;&gt;-->
+<!--<script src="js/popper.min.js"></script>-->
+<!--<script src="js/bootstrap.min.js"></script>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const sendButton = document.getElementById('send');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let audioChunks = [];-->
+<!--    let socket;-->
+<!--    let recordingStartTime;-->
+<!--    const MIN_RECORDING_DURATION = 10000; // Minimum duration in milliseconds (e.g., 10000ms = 10s)-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });-->
+
+<!--                // Clear previous chunks if any-->
+<!--                audioChunks = [];-->
+<!--                recordingStartTime = Date.now();-->
+
+<!--                mediaRecorder.onstart = () => {-->
+<!--                    console.log('Recording started.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    if (event.data.size > 0) {-->
+<!--                        audioChunks.push(event.data);-->
+<!--                        console.log(`Chunk received: ${event.data.size} bytes`);-->
+<!--                    } else {-->
+<!--                        console.log('Received empty chunk.');-->
+<!--                    }-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    console.log('Recording stopped.');-->
+<!--                    console.log(`Total chunks collected: ${audioChunks.length}`);-->
+
+<!--                    // Check recording duration-->
+<!--                    const recordingDuration = Date.now() - recordingStartTime;-->
+<!--                    if (recordingDuration >= MIN_RECORDING_DURATION) {-->
+<!--                        sendButton.disabled = false;-->
+<!--                    } else {-->
+<!--                        console.log('Recording was too short. Send button will not be enabled.');-->
+<!--                        sendButton.disabled = true;-->
+<!--                    }-->
+
+<!--                    console.log('MediaRecorder state after stop:', mediaRecorder.state);-->
+<!--                };-->
+
+<!--                mediaRecorder.start();-->
+
+<!--                startButton.disabled = true;-->
+<!--                stopButton.disabled = false;-->
+
+<!--                // Initialize WebSocket connection-->
+<!--                // socket = new WebSocket('ws://localhost:5000/audio');-->
+<!--                socket = new WebSocket('ws://localhost:7171/ws/stream');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    sendButton.addEventListener('click', () => {-->
+<!--        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--            if (audioChunks.length > 0) {-->
+<!--                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });-->
+<!--                socket.send(audioBlob);-->
+<!--                console.log('Audio sent to server.');-->
+<!--                audioChunks = []; // Clear chunks after sending-->
+
+<!--                // Reset the buttons-->
+<!--                startButton.disabled = false;-->
+<!--                sendButton.disabled = true;-->
+<!--                stopButton.disabled = true;-->
+<!--            } else {-->
+<!--                console.error('No audio data to send.');-->
+<!--            }-->
+<!--        } else {-->
+<!--            console.error('WebSocket connection is not open.');-->
+<!--        }-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        if (mediaRecorder && mediaRecorder.state !== 'inactive') {-->
+<!--            mediaRecorder.stop();-->
+<!--            stopButton.disabled = true; // Disable stop button after stopping-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Stream Recorder</title>
+    <!-- Bootstrap CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .btn-custom {
+            margin: 5px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="text-center mb-4">Audio Stream Recorder</h1>
+    <div class="text-center">
+        <button id="start" class="btn btn-primary btn-custom">Start Recording</button>
+        <button id="send" class="btn btn-success btn-custom" disabled>Send</button>
+        <button id="stop" class="btn btn-danger btn-custom" disabled>Stop Recording</button>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script>
+    const startButton = document.getElementById('start');
+    const sendButton = document.getElementById('send');
+    const stopButton = document.getElementById('stop');
+    let mediaRecorder;
+    let audioChunks = [];
+    let socket;
+
+    startButton.addEventListener('click', () => {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                // Clear previous chunks if any
+                audioChunks = [];
+
+                console.log('MediaRecorder state:', mediaRecorder.state);
+
+                mediaRecorder.onstart = () => {
+                    console.log('Recording started.');
+                    console.log('MediaRecorder state after start:', mediaRecorder.state);
+                };
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        console.log(`Chunk received: ${event.data.size} bytes`); // Debugging line
+                    } else {
+                        console.log('Received empty chunk.');
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    console.log('Recording stopped.');
+                    console.log(`Total chunks collected: ${audioChunks.length}`); // Debugging line
+                    console.log('MediaRecorder state after stop:', mediaRecorder.state);
+                };
+
+                mediaRecorder.start();
+
+                // Automatically stop after 5 seconds for testing
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                }, 5000);
+
+                startButton.disabled = true;
+                sendButton.disabled = false;
+                stopButton.disabled = false;
+
+                // Initialize WebSocket connection
+                socket = new WebSocket('ws://localhost:7171/ws/stream');
+                // socket = new WebSocket('ws://localhost:5000/audio');
+
+                socket.onopen = () => {
+                    console.log('WebSocket connection opened.');
+                };
+
+                socket.onclose = () => {
+                    console.log('WebSocket connection closed.');
+                };
+            })
+            .catch(error => console.error('Error accessing audio devices:', error));
+    });
+
+    sendButton.addEventListener('click', () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            if (audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                socket.send(audioBlob);
+                console.log('Audio sent to server.');
+                audioChunks = []; // Clear chunks after sending
+            } else {
+                console.error('No audio data to send.');
+            }
+        } else {
+            console.error('WebSocket connection is not open.');
+        }
+    });
+
+    stopButton.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        startButton.disabled = false;
+        sendButton.disabled = false;
+        stopButton.disabled = true;
+    });
+</script>
+</body>
+</html>
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Audio Stream Recorder</title>-->
+<!--    &lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--    <link href="./static/css/bootstrap.min.css">-->
+<!--    <style>-->
+<!--        body {-->
+<!--            padding: 20px;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 600px;-->
+<!--            margin: auto;-->
+<!--        }-->
+<!--        .btn-custom {-->
+<!--            margin: 5px;-->
+<!--            width: 100%;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1 class="text-center mb-4">Audio Stream Recorder</h1>-->
+<!--    <div class="text-center">-->
+<!--        <button id="start" class="btn btn-primary btn-custom">Start Recording</button>-->
+<!--        <button id="send" class="btn btn-success btn-custom" disabled>Send</button>-->
+<!--        <button id="stop" class="btn btn-danger btn-custom" disabled>Stop Recording</button>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Bootstrap JS and dependencies &ndash;&gt;-->
+<!--<script src="./static/js/popper.min.js"></script>-->
+<!--<script src="./static/js/bootstrap.min.js"></script>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const sendButton = document.getElementById('send');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let socket;-->
+<!--    let audioChunks = [];-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start(); // Start recording without specifying chunk interval-->
+
+<!--                // Connect to WebSocket server-->
+<!--                socket = new WebSocket('ws://localhost:5000/audio');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    audioChunks.push(event.data);-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    console.log('Recording stopped.');-->
+<!--                };-->
+
+<!--                startButton.disabled = true;-->
+<!--                sendButton.disabled = false;-->
+<!--                stopButton.disabled = false;-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    sendButton.addEventListener('click', () => {-->
+<!--        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });-->
+<!--            socket.send(audioBlob);-->
+<!--            audioChunks = []; // Clear chunks after sending-->
+<!--        }-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        if (mediaRecorder) {-->
+<!--            mediaRecorder.stop();-->
+<!--        }-->
+<!--        startButton.disabled = false;-->
+<!--        sendButton.disabled = false;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Audio Stream</title>-->
+<!--    &lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--    <link href="./static/css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <style>-->
+<!--        body {-->
+<!--            padding: 20px;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 600px;-->
+<!--            margin: auto;-->
+<!--        }-->
+<!--        .btn-custom {-->
+<!--            margin: 5px;-->
+<!--            width: 100%;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1 class="text-center mb-4">Audio Stream Recorder</h1>-->
+<!--    <div class="text-center">-->
+<!--        <button id="start" class="btn btn-primary btn-custom">Start Recording</button>-->
+<!--        <button id="send" class="btn btn-success btn-custom" disabled>Send</button>-->
+<!--        <button id="stop" class="btn btn-danger btn-custom" disabled>Stop Recording</button>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Bootstrap JS and dependencies &ndash;&gt;-->
+<!--<script src="./static/js/popper.min.js"></script>-->
+<!--<script src="./static/js/bootstrap.min.js"></script>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const sendButton = document.getElementById('send');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let socket;-->
+<!--    let audioChunks = [];-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start(); // Start recording without chunking-->
+
+<!--                // Connect to WebSocket server-->
+<!--                socket = new WebSocket('ws://localhost:7171/ws/stream');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    audioChunks.push(event.data);-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    console.log('Recording stopped.');-->
+<!--                };-->
+
+<!--                // Enable/disable buttons-->
+<!--                startButton.disabled = true;-->
+<!--                sendButton.disabled = false;-->
+<!--                stopButton.disabled = false;-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    sendButton.addEventListener('click', () => {-->
+<!--        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });-->
+<!--            socket.send(audioBlob);-->
+<!--            audioChunks = []; // Clear chunks after sending-->
+<!--        }-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        if (mediaRecorder) {-->
+<!--            mediaRecorder.stop();-->
+<!--        }-->
+<!--        // Enable/disable buttons-->
+<!--        startButton.disabled = false;-->
+<!--        sendButton.disabled = true;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Audio Stream</title>-->
+<!--    &lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--    <link href="./static/css/bootstrap.min.css">-->
+<!--    <style>-->
+<!--        body {-->
+<!--            padding: 20px;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 600px;-->
+<!--            margin: auto;-->
+<!--        }-->
+<!--        .btn-custom {-->
+<!--            margin: 5px;-->
+<!--            width: 100%;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1 class="text-center mb-4">Audio Stream Recorder</h1>-->
+<!--    <div class="text-center">-->
+<!--        <button id="start" class="btn btn-primary btn-custom">Start Recording</button>-->
+<!--        <button id="send" class="btn btn-success btn-custom" disabled>Send</button>-->
+<!--        <button id="stop" class="btn btn-danger btn-custom" disabled>Stop Recording</button>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Bootstrap JS and dependencies &ndash;&gt;-->
+<!--&lt;!&ndash;<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>&ndash;&gt;-->
+<!--&lt;!&ndash;<script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/js/bootstrap.min.js"></script>&ndash;&gt;-->
+<!--<script src="./static/js/popper.min.js"></script>-->
+<!--<script src="./static/js/bootstrap.min.js"></script>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const sendButton = document.getElementById('send');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let socket;-->
+<!--    let audioChunks = [];-->
+<!--    const CHUNK_SIZE = 8192; // Size of each chunk in bytes-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start(100); // Collect data in chunks of 100ms-->
+
+<!--                // Connect to WebSocket server-->
+<!--                socket = new WebSocket('ws://localhost:7171/ws/stream');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    audioChunks.push(event.data);-->
+<!--                    if (socket.readyState === WebSocket.OPEN) {-->
+<!--                        // Send data in smaller chunks-->
+<!--                        let offset = 0;-->
+<!--                        while (offset < event.data.size) {-->
+<!--                            const chunk = event.data.slice(offset, offset + CHUNK_SIZE);-->
+<!--                            socket.send(chunk);-->
+<!--                            offset += CHUNK_SIZE;-->
+<!--                        }-->
+<!--                    }-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    // Optionally handle any final actions needed when recording stops-->
+<!--                };-->
+
+<!--                startButton.disabled = true;-->
+<!--                sendButton.disabled = false;-->
+<!--                stopButton.disabled = false;-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    sendButton.addEventListener('click', () => {-->
+<!--        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--            // Send any remaining accumulated audio chunks-->
+<!--            audioChunks.forEach(chunk => socket.send(chunk));-->
+<!--            audioChunks = []; // Clear chunks after sending-->
+<!--        }-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        if (mediaRecorder) {-->
+<!--            mediaRecorder.stop();-->
+<!--        }-->
+<!--        startButton.disabled = false;-->
+<!--        sendButton.disabled = true;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!--Continous listion-->
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Audio Stream</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<button id="start">Start Recording</button>-->
+<!--<button id="send" disabled>Send</button>-->
+<!--<button id="stop" disabled>Stop Recording</button>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const sendButton = document.getElementById('send');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let socket;-->
+<!--    let audioChunks = [];-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start(100); // Collect data in chunks of 100ms-->
+
+<!--                // Connect to WebSocket server-->
+<!--                socket = new WebSocket('ws://localhost:7171/ws/stream');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    audioChunks.push(event.data); // Store chunks for later-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    // Handle what happens when recording stops-->
+<!--                };-->
+
+<!--                startButton.disabled = true;-->
+<!--                sendButton.disabled = false;-->
+<!--                stopButton.disabled = false;-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    sendButton.addEventListener('click', () => {-->
+<!--        if (socket && socket.readyState === WebSocket.OPEN) {-->
+<!--            const blob = new Blob(audioChunks, { type: 'audio/wav' });-->
+<!--            socket.send(blob);-->
+<!--            audioChunks = []; // Clear chunks after sending-->
+<!--        }-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        if (mediaRecorder) {-->
+<!--            mediaRecorder.stop();-->
+<!--        }-->
+<!--        startButton.disabled = false;-->
+<!--        sendButton.disabled = true;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+<!--Working Fine -->
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Audio Stream</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<button id="start">Start Recording</button>-->
+<!--<button id="stop" disabled>Stop Recording</button>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let socket;-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start(100); // Collect data in chunks of 100ms-->
+
+<!--                // Connect to WebSocket server-->
+<!--                socket = new WebSocket('ws://localhost:7171/ws/stream');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    if (socket.readyState === WebSocket.OPEN) {-->
+<!--                        socket.send(event.data);-->
+<!--                    }-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    socket.close();-->
+<!--                };-->
+
+<!--                startButton.disabled = true;-->
+<!--                stopButton.disabled = false;-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        mediaRecorder.stop();-->
+<!--        startButton.disabled = false;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Audio Recorder</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h1>Audio Recorder</h1>-->
+<!--<button id="startBtn">Start Recording</button>-->
+<!--<button id="stopBtn" disabled>Stop Recording</button>-->
+<!--<button id="sendBtn" disabled>Send Transcript</button>-->
+<!--<div id="transcriptBox" style="border:1px solid black; height:200px; overflow-y:scroll;"></div>-->
+
+<!--<script>-->
+<!--    var websocket = null;-->
+<!--    var audioContext = null;-->
+<!--    var processor = null;-->
+<!--    var source = null;-->
+<!--    var audioDataArray = [];-->
+
+<!--    // Connect to WebSocket-->
+<!--    function connect() {-->
+<!--        websocket = new WebSocket('ws://localhost:7171/ws/stream'); // Updated URL-->
+<!--        websocket.binaryType = 'arraybuffer';-->
+
+<!--        websocket.onopen = function(event) {-->
+<!--            console.log('Connected to WebSocket');-->
+<!--            startRecording();-->
+<!--        };-->
+
+<!--        websocket.onmessage = function(event) {-->
+<!--            console.log('Received: ' + event.data);-->
+<!--            var transcriptBox = document.getElementById('transcriptBox');-->
+<!--            var paragraph = document.createElement('p');-->
+<!--            paragraph.textContent = event.data;-->
+<!--            transcriptBox.appendChild(paragraph);-->
+<!--            transcriptBox.scrollTop = transcriptBox.scrollHeight;-->
+<!--        };-->
+
+<!--        websocket.onclose = function(event) {-->
+<!--            console.log('Disconnected from WebSocket');-->
+<!--        };-->
+
+<!--        websocket.onerror = function(event) {-->
+<!--            console.error('WebSocket error:', event);-->
+<!--        };-->
+<!--    }-->
+
+<!--    // Start recording audio-->
+<!--    function startRecording() {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(function(mediaStream) {-->
+<!--                audioContext = new (window.AudioContext || window.webkitAudioContext)();-->
+<!--                source = audioContext.createMediaStreamSource(mediaStream);-->
+
+<!--                const bufferSize = 4096;-->
+<!--                processor = audioContext.createScriptProcessor(bufferSize, 1, 1);-->
+<!--                source.connect(processor);-->
+<!--                processor.connect(audioContext.destination);-->
+
+<!--                processor.onaudioprocess = function(event) {-->
+<!--                    const inputBuffer = event.inputBuffer;-->
+<!--                    const audioData = inputBuffer.getChannelData(0);-->
+<!--                    audioDataArray.push(new Float32Array(audioData));-->
+<!--                };-->
+
+<!--                document.getElementById('stopBtn').disabled = false;-->
+<!--            })-->
+<!--            .catch(function(err) {-->
+<!--                console.error('Error accessing media devices.', err);-->
+<!--            });-->
+<!--    }-->
+
+<!--    // Send audio data to WebSocket-->
+<!--    function sendTranscript() {-->
+<!--        if (audioDataArray.length > 0) {-->
+<!--            // Concatenate all audio data chunks-->
+<!--            const byteArrays = new Float32Array(audioDataArray.reduce((acc, bytes) => acc + bytes.length, 0));-->
+<!--            let offset = 0;-->
+<!--            audioDataArray.forEach(bytes => {-->
+<!--                byteArrays.set(bytes, offset);-->
+<!--                offset += bytes.length;-->
+<!--            });-->
+
+<!--            websocket.send(byteArrays.buffer);-->
+<!--            audioDataArray = []; // Clear the array after sending-->
+<!--            alert("Transcript sent!");-->
+<!--        } else {-->
+<!--            console.log('No audio data available, nothing to send.');-->
+<!--        }-->
+<!--    }-->
+
+<!--    // Stop recording and send data-->
+<!--    function stopRecordingAndSend() {-->
+<!--        if (processor) {-->
+<!--            processor.disconnect();-->
+<!--        }-->
+<!--        if (source) {-->
+<!--            source.disconnect();-->
+<!--        }-->
+<!--        sendTranscript();-->
+<!--    }-->
+
+<!--    // Event listeners for buttons-->
+<!--    document.getElementById('startBtn').addEventListener('click', function() {-->
+<!--        connect();-->
+<!--        document.getElementById('startBtn').disabled = true;-->
+<!--    });-->
+
+<!--    document.getElementById('stopBtn').addEventListener('click', function() {-->
+<!--        stopRecordingAndSend();-->
+<!--        document.getElementById('stopBtn').disabled = true;-->
+<!--        document.getElementById('sendBtn').disabled = true;-->
+<!--        websocket.close();-->
+<!--    });-->
+
+<!--    document.getElementById('sendBtn').addEventListener('click', function() {-->
+<!--        sendTranscript();-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Audio Stream</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<button id="start">Start Recording</button>-->
+<!--<button id="stop" disabled>Stop Recording</button>-->
+<!--<script>-->
+<!--    const startButton = document.getElementById('start');-->
+<!--    const stopButton = document.getElementById('stop');-->
+<!--    let mediaRecorder;-->
+<!--    let socket;-->
+
+<!--    startButton.addEventListener('click', () => {-->
+<!--        navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--            .then(stream => {-->
+<!--                mediaRecorder = new MediaRecorder(stream);-->
+<!--                mediaRecorder.start(100); // Collect data in chunks of 100ms-->
+
+<!--                // Connect to WebSocket server-->
+<!--                socket = new WebSocket('ws://localhost:8080/audio');-->
+
+<!--                socket.onopen = () => {-->
+<!--                    console.log('WebSocket connection opened.');-->
+<!--                };-->
+
+<!--                socket.onclose = () => {-->
+<!--                    console.log('WebSocket connection closed.');-->
+<!--                };-->
+
+<!--                mediaRecorder.ondataavailable = event => {-->
+<!--                    if (socket.readyState === WebSocket.OPEN) {-->
+<!--                        socket.send(event.data);-->
+<!--                    }-->
+<!--                };-->
+
+<!--                mediaRecorder.onstop = () => {-->
+<!--                    socket.close();-->
+<!--                };-->
+
+<!--                startButton.disabled = true;-->
+<!--                stopButton.disabled = false;-->
+<!--            })-->
+<!--            .catch(error => console.error('Error accessing audio devices:', error));-->
+<!--    });-->
+
+<!--    stopButton.addEventListener('click', () => {-->
+<!--        mediaRecorder.stop();-->
+<!--        startButton.disabled = false;-->
+<!--        stopButton.disabled = true;-->
+<!--    });-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
